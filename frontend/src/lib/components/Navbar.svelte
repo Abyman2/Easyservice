@@ -20,8 +20,17 @@
 
   // Smart notification system generated from active bookings
   $: notifications = ($userBookings || []).flatMap((b) => {
-    if (b.status !== 'CONFIRMED') return [];
+    const decisionNotification = b.providerStatus && b.providerStatus !== 'PENDING' ? [{
+      id: `notif_decision_${b.id}`,
+      title: b.providerStatus === 'ACCEPTED' ? 'Booking accepted' : 'Booking declined',
+      message: b.providerDecisionMessage || `Your provider ${b.providerStatus.toLowerCase()} your booking.`,
+      time: b.providerDecisionAt ? new Date(b.providerDecisionAt).toLocaleString() : 'Recently',
+      unread: true,
+      type: 'DECISION'
+    }] : [];
+    if (b.status !== 'CONFIRMED' && b.providerStatus !== 'DECLINED') return decisionNotification;
     return [
+      ...decisionNotification,
       {
         id: `notif_day_${b.id}`,
         title: `URGENT: ${b.listingTitle}`,

@@ -88,14 +88,7 @@
 
   function calculateDiscount(code, registeredCodes) {
     if (!code) return 0;
-    if (registeredCodes && registeredCodes[code] !== undefined) return registeredCodes[code];
-    if (code.includes('30')) return 30;
-    if (code.includes('25')) return 25;
-    if (code.includes('20')) return 20;
-    if (code.includes('15')) return 15;
-    if (code.includes('10')) return 10;
-    if (code.includes('5')) return 5;
-    return 0;
+    return registeredCodes && registeredCodes[code] !== undefined ? registeredCodes[code] : 0;
   }
 
   function goToStep2() {

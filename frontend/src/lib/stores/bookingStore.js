@@ -30,6 +30,7 @@ export function updateBookingProviderStatus(bookingId, providerStatus) {
       ...item,
       providerStatus,
       providerDecisionAt: new Date().toISOString(),
+      providerDecisionMessage: providerStatus === 'ACCEPTED' ? 'Your provider accepted this booking.' : 'Your provider declined this booking.',
       status: providerStatus === 'DECLINED' ? 'DECLINED' : item.status
     };
   }));

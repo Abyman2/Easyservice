@@ -62,6 +62,23 @@
   let providerPublishedListings = [];
   let providerSuccessMsg = '';
 
+  function restoreProviderProfile(userId) {
+    try {
+      const raw = localStorage.getItem(`easyservice_provider_profile_${userId}`);
+      if (!raw) return false;
+      const profile = JSON.parse(raw);
+      companyName = profile.companyName || '';
+      companyCategory = profile.companyCategory || 'HOTEL';
+      companyLocation = profile.companyLocation || 'Addis Ababa';
+      companyPhone = profile.companyPhone || '+251 91 123 4567';
+      isCompanyRegistered = Boolean(profile.companyName);
+      return isCompanyRegistered;
+    } catch {
+      isCompanyRegistered = false;
+      return false;
+    }
+  }
+
   afterUpdate(() => {
     if (activeTab !== previousActiveTab) {
       previousActiveTab = activeTab;
@@ -130,6 +147,7 @@
     const savedTheme = localStorage.getItem('easyservice_theme') || 'light';
     currentTheme = savedTheme;
     document.documentElement.setAttribute('data-theme', savedTheme);
+    if ($currentUser) restoreProviderProfile($currentUser.id);
 
     const savedFavs = localStorage.getItem('easyservice_favorites');
     if (savedFavs) {
@@ -200,6 +218,7 @@
     return booking.providerId === $currentUser.id || booking.hostName === companyName;
   });
   $: providerCalendar = providerBookings.reduce((days, booking) => {
+    if (booking.providerStatus !== 'ACCEPTED') return days;
     const date = booking.startDate || booking.bookingDate || 'Unscheduled';
     days[date] = (days[date] || 0) + 1;
     return days;
@@ -224,6 +243,8 @@
   function handleRegisterCompany() {
     if (!companyName) return;
     isCompanyRegistered = true;
+    currentUser.update((user) => user ? { ...user, role: 'PROVIDER' } : user);
+    localStorage.setItem(`easyservice_provider_profile_${$currentUser.id}`, JSON.stringify({ companyName, companyCategory, companyLocation, companyPhone }));
     providerSuccessMsg = `Company "${companyName}" registered successfully! Welcome to your Provider Dashboard.`;
   }
 
@@ -259,6 +280,9 @@
 
   function handleSwitchUser(u) {
     $currentUser = u;
+    if (restoreProviderProfile(u.id)) {
+      currentUser.update((user) => user ? { ...user, role: 'PROVIDER' } : user);
+    }
   }
 
   function handleCancelBooking(bookingId) {
