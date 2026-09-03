@@ -38,6 +38,9 @@
   let customerName = $currentUser ? $currentUser.name : 'Abebe Kebede';
   let customerEmail = $currentUser ? $currentUser.email : 'abebe.kebede@aau.edu.et';
   let customerPhone = '+251 91 100 0001';
+  let pickupTime = '09:00';
+  let returnTime = '18:00';
+  let driverOption = 'WITHOUT_DRIVER';
 
   let errorMsg = '';
   let loading = false;
@@ -52,6 +55,9 @@
     quantity = 1;
     startDate = getTodayStr();
     endDate = getTomorrowStr();
+    pickupTime = '09:00';
+    returnTime = '18:00';
+    driverOption = 'WITHOUT_DRIVER';
     promoCode = listing?.preAppliedPromo || '';
   }
 
@@ -163,6 +169,9 @@
           durationUnitLabel: durationUnitLabel,
           startDate: startDate,
           endDate: endDate,
+          pickupTime: listing.category === 'CAR_RENTAL' ? pickupTime : null,
+          returnTime: listing.category === 'CAR_RENTAL' ? returnTime : null,
+          driverOption: listing.category === 'CAR_RENTAL' ? driverOption : null,
           unitPrice: listing.price,
           subtotal: subtotal,
           discountAmount: discountAmount,
@@ -170,6 +179,8 @@
           totalAmount: finalPaid,
           paymentMethod: paymentMethod,
           status: 'CONFIRMED',
+          providerStatus: 'PENDING',
+          providerId: listing.providerId || listing.hostName || null,
           bookingDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           variantDetails: listing.variantDetails || null
         };
@@ -252,6 +263,24 @@
             <div class="duration-badge-box">
               📅 Duration: <strong>{effectiveDuration} {durationUnitLabel}</strong> ({startDate} → {endDate})
             </div>
+
+            {#if listing.category === 'CAR_RENTAL'}
+              <div class="rental-options-grid animate-fade-in">
+                <div class="form-group">
+                  <label for="pickupTimeInput">Pickup Time</label>
+                  <input id="pickupTimeInput" type="time" bind:value={pickupTime} disabled={isSoldOut} class="input-field" />
+                </div>
+                <div class="form-group">
+                  <label for="returnTimeInput">Return Time</label>
+                  <input id="returnTimeInput" type="time" bind:value={returnTime} disabled={isSoldOut} class="input-field" />
+                </div>
+              </div>
+              <div class="driver-options" aria-label="Driver option">
+                <span class="form-label">Driver Option</span>
+                <label class="driver-option {driverOption === 'WITHOUT_DRIVER' ? 'selected' : ''}"><input type="radio" bind:group={driverOption} value="WITHOUT_DRIVER" /> Without driver</label>
+                <label class="driver-option {driverOption === 'WITH_DRIVER' ? 'selected' : ''}"><input type="radio" bind:group={driverOption} value="WITH_DRIVER" /> With driver</label>
+              </div>
+            {/if}
           {:else}
             <div class="form-group animate-fade-in">
               <label for="singleDateInput">Preferred Booking Date</label>
@@ -336,6 +365,9 @@
               <div class="review-row"><span>Quantity:</span> <strong>{quantity} unit(s)</strong></div>
               {#if isDurationCategory}
                 <div class="review-row"><span>Dates ({startLabel} → {endLabel}):</span> <strong>{startDate} to {endDate} ({effectiveDuration} {durationUnitLabel})</strong></div>
+                {#if listing.category === 'CAR_RENTAL'}
+                  <div class="review-row"><span>Rental plan:</span> <strong>{pickupTime} pickup → {returnTime} return, {driverOption === 'WITH_DRIVER' ? 'with driver' : 'without driver'}</strong></div>
+                {/if}
               {:else}
                 <div class="review-row"><span>Booking Date:</span> <strong>{startDate}</strong></div>
               {/if}
@@ -589,6 +621,50 @@
     border-radius: var(--radius-sm);
     font-size: 0.82rem;
     font-weight: 700;
+  }
+
+  .rental-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .driver-options {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .form-label {
+    width: 100%;
+    color: var(--text-muted);
+    font-size: .76rem;
+    font-weight: 800;
+  }
+
+  .driver-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    color: var(--text-muted);
+    font-size: .8rem;
+    cursor: pointer;
+  }
+
+  .driver-option.selected {
+    border-color: var(--accent-gold);
+    background: var(--accent-gold-light);
+    color: var(--text-main);
+  }
+
+  .driver-option input { accent-color: var(--accent-gold); }
+
+  @media (max-width: 560px) {
+    .date-picker-row, .rental-options-grid { grid-template-columns: 1fr; display: grid; }
   }
 
   .form-group label {

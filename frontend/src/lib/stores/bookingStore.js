@@ -23,6 +23,18 @@ export function addBooking(booking) {
   userBookings.update(items => [booking, ...items]);
 }
 
+export function updateBookingProviderStatus(bookingId, providerStatus) {
+  userBookings.update(items => items.map(item => {
+    if (item.id !== bookingId) return item;
+    return {
+      ...item,
+      providerStatus,
+      providerDecisionAt: new Date().toISOString(),
+      status: providerStatus === 'DECLINED' ? 'DECLINED' : item.status
+    };
+  }));
+}
+
 export function cancelBookingItem(bookingId) {
   let refundAmount = 0;
   userBookings.update(items => {

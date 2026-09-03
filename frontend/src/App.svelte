@@ -13,7 +13,7 @@
   import Icon from './lib/components/Icon.svelte';
   import { fetchListings, mockProviders } from './lib/api/api.js';
   import { currentUser } from './lib/stores/authStore.js';
-  import { userBookings, cancelBookingItem } from './lib/stores/bookingStore.js';
+  import { userBookings, cancelBookingItem, updateBookingProviderStatus } from './lib/stores/bookingStore.js';
 
   let activeTab = 'listings'; // 'listings' | 'history' | 'provider'
   let profileSubTab = 'BOOKINGS'; // 'BOOKINGS' | 'FAVORITES'
@@ -61,13 +61,22 @@
   let providerPublishedListings = [];
   let providerSuccessMsg = '';
 
+  function loadProviderListings() {
+    try {
+      const saved = localStorage.getItem('easyservice_provider_listings');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  }
+
   // Context-aware Hero Atmosphere Configurations
   const categoryAtmospheres = {
     ALL: {
       tag: 'ETHIOPIA MARKETPLACE',
       headline: 'One place for everything worth experiencing in Ethiopia.',
       subtitle: 'Discover verified luxury resort stays, 4×4 rentals, cultural jazz summits, and authentic Ethiopian crafts.',
-      bgImg: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1600&q=80',
+      bgImg: 'https://upload.wikimedia.org/wikipedia/commons/3/33/Addis_Ababa_skyline.jpg',
       accentColor: 'var(--accent-gold)'
     },
     HOTEL: {
@@ -122,9 +131,13 @@
         /* keep defaults */
       }
     }
+    providerPublishedListings = loadProviderListings();
+    listings = [...providerPublishedListings, ...listings];
 
     const data = await fetchListings();
-    listings = data && data.length > 0 ? data : mockProviders;
+    const catalog = data && data.length > 0 ? data : mockProviders;
+    const savedIds = new Set(providerPublishedListings.map((listing) => listing.id));
+    listings = [...providerPublishedListings, ...catalog.filter((listing) => !savedIds.has(listing.id))];
   });
 
   function toggleTheme() {
@@ -174,6 +187,15 @@
     if (sortBy === 'PRICE_HIGH') return b.price - a.price;
     return 0;
   });
+  $: providerBookings = ($userBookings || []).filter(booking => {
+    if (!$currentUser || $currentUser.role !== 'PROVIDER') return false;
+    return booking.providerId === $currentUser.id || booking.hostName === companyName;
+  });
+  $: providerCalendar = providerBookings.reduce((days, booking) => {
+    const date = booking.startDate || booking.bookingDate || 'Unscheduled';
+    days[date] = (days[date] || 0) + 1;
+    return days;
+  }, {});
 
   $: favoritedListings = listings.filter(l => favoriteIds.has(l.id));
 
@@ -203,7 +225,8 @@
     const newListing = {
       id: 'prov_' + Date.now(),
       title: `${companyName} — ${newTitle}`,
-      category: companyCategory,
+      category: String(companyCategory).toUpperCase(),
+      providerId: $currentUser?.id || companyName,
       description: newDesc || `Offered directly by ${companyName}.`,
       price: Number(newPrice),
       capacity: Number(newCapacity),
@@ -219,6 +242,7 @@
 
     listings = [newListing, ...listings];
     providerPublishedListings = [newListing, ...providerPublishedListings];
+    localStorage.setItem('easyservice_provider_listings', JSON.stringify(providerPublishedListings));
     providerSuccessMsg = `New listing "${newTitle}" created and published successfully under ${companyName}!`;
     showAddListingModal = false;
     newTitle = '';
@@ -227,7 +251,6 @@
 
   function handleSwitchUser(u) {
     $currentUser = u;
-    userBookings.set([]); // Start as new for the new user
   }
 
   function handleCancelBooking(bookingId) {
@@ -674,8 +697,8 @@
                     <div class="page-left">
                       <div class="page-header-stamp">
                         <span class="stamp-number">PAGE 0{idx + 1}</span>
-                        <span class={b.status === 'CONFIRMED' ? 'badge-verified' : 'badge-warning'}>
-                          {b.status === 'CONFIRMED' ? '● ACTIVE TODAY' : 'REFUNDED'}
+                        <span class={b.providerStatus === 'DECLINED' || b.status === 'DECLINED' ? 'badge-warning' : (b.providerStatus === 'ACCEPTED' ? 'badge-verified' : 'badge-warning')}>
+                          {b.providerStatus === 'ACCEPTED' ? '● PROVIDER ACCEPTED' : (b.providerStatus === 'DECLINED' ? '● PROVIDER DECLINED' : '● AWAITING PROVIDER')}
                         </span>
                       </div>
 
@@ -684,7 +707,10 @@
                       <div class="page-info-box">
                         <h3 class="page-title">{b.listingTitle}</h3>
                         <p class="page-location"><Icon name="mappin" size={13} color="var(--accent-gold)" /> {b.location}</p>
-                        <p class="page-date">🗓️ Date: <strong>{b.bookingDate}</strong></p>
+                        <p class="page-date">🗓️ Date: <strong>{b.startDate || b.bookingDate}</strong></p>
+                        {#if b.category === 'CAR_RENTAL'}
+                          <p class="page-date">🕘 <strong>{b.pickupTime}</strong> pickup · {b.driverOption === 'WITH_DRIVER' ? 'With driver' : 'Without driver'}</p>
+                        {/if}
                       </div>
                     </div>
 
@@ -829,6 +855,49 @@
               </div>
             </div>
 
+            <section class="provider-bookings-panel">
+              <div class="panel-heading-row">
+                <div>
+                  <span class="sub-pill">BOOKING CONTROL CENTER</span>
+                  <h3>Customer bookings</h3>
+                  <p class="subtext">Review requests, confirm availability, and keep your calendar up to date.</p>
+                </div>
+                <span class="booking-count-label">{providerBookings.length} booking{providerBookings.length === 1 ? '' : 's'}</span>
+              </div>
+
+              {#if providerBookings.length === 0}
+                <div class="booking-empty"><Icon name="calendar" size={24} color="var(--accent-gold)" /><span>No customer bookings yet.</span><small>New reservations for your listings will appear here.</small></div>
+              {:else}
+                <div class="provider-booking-layout">
+                  <div class="provider-booking-list">
+                    {#each providerBookings as booking}
+                      <article class="provider-booking-row">
+                        <div class="booking-date-tile"><strong>{booking.startDate || '—'}</strong><small>{booking.category === 'CAR_RENTAL' ? `${booking.pickupTime || '09:00'} pickup` : 'scheduled date'}</small></div>
+                        <div class="booking-row-main">
+                          <strong>{booking.listingTitle}</strong>
+                          <span>{booking.quantity} unit(s) · {booking.category} · {booking.totalAmount ? `ETB ${Number(booking.totalAmount).toLocaleString()}` : 'amount pending'}</span>
+                          {#if booking.category === 'CAR_RENTAL'}<small>{booking.driverOption === 'WITH_DRIVER' ? 'With driver' : 'Without driver'} · return {booking.returnTime || '18:00'}</small>{/if}
+                        </div>
+                        <div class="booking-row-actions">
+                          <span class="booking-status {booking.providerStatus?.toLowerCase() || 'pending'}">{booking.providerStatus || 'PENDING'}</span>
+                          {#if !booking.providerStatus || booking.providerStatus === 'PENDING'}
+                            <button class="booking-accept" on:click={() => updateBookingProviderStatus(booking.id, 'ACCEPTED')}>Accept</button>
+                            <button class="booking-decline" on:click={() => updateBookingProviderStatus(booking.id, 'DECLINED')}>Decline</button>
+                          {/if}
+                        </div>
+                      </article>
+                    {/each}
+                  </div>
+                  <aside class="provider-calendar">
+                    <h4><Icon name="calendar" size={15} /> Booked dates</h4>
+                    {#each Object.entries(providerCalendar) as [date, count]}
+                      <div class="calendar-day"><span>{date}</span><strong>{count} booked</strong></div>
+                    {/each}
+                  </aside>
+                </div>
+              {/if}
+            </section>
+
             {#if providerSuccessMsg}
               <div class="alert-success">{providerSuccessMsg}</div>
             {/if}
@@ -838,30 +907,29 @@
               <h3>Management Inventory ({companyName})</h3>
               <p class="subtext">Rooms, vehicle options, or items published by your business:</p>
 
-              <div class="listings-table-wrapper">
-                <table class="listings-table">
-                  <thead>
-                    <tr>
-                      <th>Image</th>
-                      <th>Listing Name</th>
-                      <th>Category</th>
-                      <th>Price</th>
-                      <th>Available Stock</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><img src={newImage} alt="Listing" class="table-thumb" /></td>
-                      <td><strong>{companyName} — Executive Suite</strong></td>
-                      <td>{companyCategory}</td>
-                      <td>ETB {newPrice.toLocaleString()}</td>
-                      <td><span class="stock-chip">{newCapacity} Available</span></td>
-                      <td><span class="badge-verified">● PUBLISHED</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              {#if providerPublishedListings.length === 0}
+                <div class="inventory-empty">
+                  <Icon name="bag" size={28} color="var(--accent-gold)" />
+                  <strong>No listings published yet</strong>
+                  <span>Create your first listing to see it here.</span>
+                  <button class="btn-gold" on:click={() => showAddListingModal = true}>Add Your First Listing →</button>
+                </div>
+              {:else}
+                <div class="provider-listings-grid">
+                  {#each providerPublishedListings as listing, index}
+                    <article class="provider-listing-card">
+                      <div class="provider-listing-number">{String(index + 1).padStart(2, '0')}</div>
+                      <img src={listing.imageUrl} alt={listing.title} class="provider-listing-image" />
+                      <div class="provider-listing-body">
+                        <div class="provider-listing-meta"><span>{listing.category}</span><span class="badge-verified">PUBLISHED</span></div>
+                        <h4>{listing.title}</h4>
+                        <p>{listing.description}</p>
+                        <div class="provider-listing-footer"><strong>ETB {listing.price.toLocaleString()}</strong><span>{listing.availableQuantity} available</span></div>
+                      </div>
+                    </article>
+                  {/each}
+                </div>
+              {/if}
             </div>
           </div>
         {/if}
@@ -930,14 +998,27 @@
 
   <!-- Provider CTA and footer -->
   <section class="provider-cta">
-    <div class="provider-cta-copy">
-      <span class="eyebrow">GROW WITH EASYSERVICE</span>
-      <h2>Your service belongs here.</h2>
-      <p>Whether you run a hotel, rental fleet, event, experience, or shop, reach customers looking for trusted services across Ethiopia.</p>
+    <div class="provider-cta-content">
+      <span class="eyebrow"><Icon name="sparkles" size={12} /> JOIN THE EASYSERVICE COMMUNITY</span>
+      <h2>Become a Verified Provider <Icon name="shield" size={22} color="var(--accent-gold)" /></h2>
+      <p>List your hotel, vehicle, event, experience, or products and reach thousands of verified customers across Ethiopia.</p>
+
+      <div class="provider-benefits">
+        <div><span class="provider-benefit-icon"><Icon name="shield" size={17} /></span><span><strong>Verified Marketplace</strong><small>Reach trusted customers</small></span></div>
+        <div><span class="provider-benefit-icon"><Icon name="sparkles" size={17} /></span><span><strong>Easy Management</strong><small>Simple tools to list and manage</small></span></div>
+        <div><span class="provider-benefit-icon"><Icon name="calendar" size={17} /></span><span><strong>Secure Payments</strong><small>Simulated payments and payouts</small></span></div>
+        <div><span class="provider-benefit-icon"><Icon name="user" size={17} /></span><span><strong>Customer Growth</strong><small>Grow your business every day</small></span></div>
+      </div>
+
+      <div class="provider-cta-actions">
+        <button class="btn-gold" on:click={() => activeTab = 'provider'}><Icon name="user" size={16} /> Become a Provider <span aria-hidden="true">→</span></button>
+        <button class="btn-outline provider-how-btn" on:click={() => activeTab = 'provider'}><Icon name="sparkles" size={15} /> How It Works</button>
+      </div>
+      <span class="provider-proof"><Icon name="shield" size={14} /> It's free to join and easy to get started.</span>
     </div>
-    <div class="provider-cta-action">
-      <button class="btn-gold" on:click={() => activeTab = 'provider'}>Become a Provider <span aria-hidden="true">→</span></button>
-      <span class="provider-proof"><Icon name="check" size={14} /> Verified marketplace <Icon name="check" size={14} /> Easy management</span>
+    <div class="provider-cta-visual">
+      <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1100&q=85" alt="EasyService provider preparing products for customers" />
+      <div class="provider-cta-stat"><span class="provider-stat-icon"><Icon name="user" size={18} /></span><strong>10,000+<small>Active Providers</small></strong><span>Growing together across Ethiopia</span></div>
     </div>
   </section>
 
@@ -1080,13 +1161,16 @@
 
   .hero-section {
     position: relative;
-    border-radius: var(--radius-xl);
+    border-radius: 0;
     overflow: hidden;
     margin-bottom: 36px;
-    padding: 56px 32px 40px;
-    border: 1px solid var(--border-subtle);
+    margin-left: -32px;
+    margin-right: -32px;
+    width: calc(100% + 64px);
+    min-height: 630px;
+    padding: 86px 32px 48px;
+    border: 0;
     transition: all 0.4s ease;
-    width: 100%;
   }
 
   .hero-bg-wrapper {
@@ -1738,6 +1822,38 @@
     gap: 16px;
   }
 
+  .provider-bookings-panel {
+    padding: 24px 32px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+  }
+
+  .panel-heading-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
+  .panel-heading-row h3 { margin: 5px 0 3px; font-size: 1.15rem; }
+  .booking-count-label { color: var(--accent-gold); font-size: .78rem; font-weight: 800; white-space: nowrap; }
+  .booking-empty { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: var(--text-muted); text-align: center; }
+  .booking-empty small { font-size: .75rem; }
+  .provider-booking-layout { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 20px; margin-top: 18px; }
+  .provider-booking-list { display: flex; flex-direction: column; gap: 10px; }
+  .provider-booking-row { display: grid; grid-template-columns: 100px minmax(0, 1fr) auto; gap: 13px; align-items: center; padding: 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
+  .booking-date-tile { display: flex; flex-direction: column; gap: 3px; padding: 8px; background: var(--bg-surface-secondary); color: var(--text-main); font-size: .72rem; }
+  .booking-date-tile strong { color: var(--accent-gold); overflow-wrap: anywhere; }
+  .booking-date-tile small, .booking-row-main span, .booking-row-main small { color: var(--text-muted); font-size: .68rem; }
+  .booking-row-main { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .booking-row-main > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .booking-row-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .booking-status { font-size: .65rem; font-weight: 900; padding: 4px 7px; background: var(--bg-surface-secondary); }
+  .booking-status.accepted { color: var(--status-success-text); }
+  .booking-status.declined { color: #b42318; }
+  .booking-accept, .booking-decline { border: 0; padding: 6px 8px; border-radius: var(--radius-sm); font-size: .68rem; font-weight: 800; cursor: pointer; }
+  .booking-accept { background: var(--status-success-bg); color: var(--status-success-text); }
+  .booking-decline { background: #fff0ed; color: #b42318; }
+  .provider-calendar { padding: 14px; background: var(--bg-surface-secondary); border-radius: var(--radius-md); }
+  .provider-calendar h4 { display: flex; align-items: center; gap: 6px; font-size: .82rem; margin-bottom: 10px; }
+  .calendar-day { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 1px solid var(--border-subtle); font-size: .72rem; }
+  .calendar-day strong { color: var(--accent-gold); font-size: .68rem; }
+
   .stat-box {
     background: var(--bg-surface-secondary);
     border: 1px solid var(--border-subtle);
@@ -1815,9 +1931,112 @@
   }
 
   .add-modal {
-    max-width: 560px;
-    width: 90%;
+    width: min(760px, calc(100% - 32px));
+    max-height: min(820px, calc(100vh - 48px));
+    overflow-y: auto;
+    padding: 28px;
   }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(11, 19, 32, 0.66);
+    backdrop-filter: blur(8px);
+  }
+
+  .modal-content {
+    max-height: 100%;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .modal-header h2 {
+    font-size: clamp(1.25rem, 2.5vw, 1.8rem);
+    line-height: 1.2;
+  }
+
+  .close-btn {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 50%;
+    background: var(--bg-surface-secondary);
+    color: var(--text-main);
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .inventory-empty {
+    min-height: 190px;
+    border: 1px dashed var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .inventory-empty strong { color: var(--text-main); }
+  .inventory-empty .btn-gold { margin-top: 8px; }
+
+  .provider-listings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+  }
+
+  .provider-listing-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+  }
+
+  .provider-listing-number {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1;
+    padding: 4px 7px;
+    background: var(--accent-gold);
+    color: #fff;
+    font-size: .7rem;
+    font-weight: 900;
+  }
+
+  .provider-listing-image { width: 100%; height: 140px; display: block; object-fit: cover; background: var(--bg-surface-secondary); }
+  .provider-listing-body { padding: 14px; }
+  .provider-listing-meta, .provider-listing-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .provider-listing-meta { color: var(--accent-gold); font-size: .68rem; font-weight: 800; }
+  .provider-listing-meta .badge-verified { color: var(--status-success-text); font-size: .62rem; }
+  .provider-listing-body h4 { margin: 9px 0 5px; font-size: .98rem; line-height: 1.25; }
+  .provider-listing-body p { min-height: 38px; color: var(--text-muted); font-size: .76rem; line-height: 1.4; }
+  .provider-listing-footer { margin-top: 14px; font-size: .75rem; }
+  .provider-listing-footer strong { color: var(--accent-gold); }
+  .provider-listing-footer span { color: var(--status-success-text); font-weight: 700; }
 
   .footer {
     background: #fffdfa;
@@ -1842,20 +2061,42 @@
   .provider-cta {
     max-width: 1440px;
     margin: 72px auto 0;
-    padding: 42px clamp(24px, 5vw, 68px);
+    min-height: 300px;
+    padding: 0;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 32px;
-    background: var(--bg-surface-secondary);
-    border-top: 3px solid var(--accent-gold);
+    gap: 0;
+    overflow: hidden;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
   }
 
-  .provider-cta h2 { font-size: clamp(1.6rem, 3vw, 2.35rem); margin: 6px 0 8px; }
-  .provider-cta p { max-width: 650px; color: var(--text-muted); }
-  .provider-cta-action { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; flex: 0 0 auto; }
+  .provider-cta-content { width: 58%; padding: 32px clamp(24px, 4vw, 58px); }
+  .provider-cta h2 { display: flex; align-items: center; gap: 10px; font-size: clamp(1.6rem, 3vw, 2.35rem); margin: 8px 0 8px; }
+  .provider-cta p { max-width: 620px; color: var(--text-muted); font-size: .93rem; }
+  .provider-cta-action { display: none; }
+  .provider-cta-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .provider-how-btn { padding-inline: 16px; }
   .provider-proof { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: .74rem; white-space: nowrap; }
   .provider-proof :global(svg) { color: var(--status-success-text); }
+
+  .provider-benefits { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-top: 24px; }
+  .provider-benefits > div { display: flex; align-items: flex-start; gap: 9px; min-width: 0; }
+  .provider-benefit-icon, .provider-stat-icon { display: grid; place-items: center; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-gold-light); color: var(--accent-gold); }
+  .provider-benefits > div > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+  .provider-benefits strong { font-size: .7rem; }
+  .provider-benefits small { color: var(--text-muted); font-size: .66rem; line-height: 1.3; }
+  .provider-cta-visual { position: relative; width: 42%; min-height: 300px; overflow: hidden; }
+  .provider-cta-visual::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bg-surface) 0%, rgba(255,255,255,0) 28%), linear-gradient(0deg, rgba(11,19,32,.26), transparent 50%); pointer-events: none; }
+  .provider-cta-visual img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
+  .provider-cta-stat { position: absolute; right: 24px; bottom: 22px; z-index: 1; display: grid; grid-template-columns: auto 1fr; gap: 4px 9px; min-width: 170px; padding: 14px; color: var(--text-main); background: rgba(255,255,255,.92); border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(11,19,32,.14); }
+  .provider-cta-stat strong { display: flex; flex-direction: column; font-size: 1.05rem; line-height: 1.1; }
+  .provider-cta-stat strong small { font-size: .68rem; margin-top: 3px; }
+  .provider-cta-stat > span:last-child { grid-column: 2; color: var(--text-muted); font-size: .62rem; }
+  :global([data-theme="dark"]) .provider-cta-visual::after { background: linear-gradient(90deg, var(--bg-surface) 0%, rgba(13,24,36,0) 28%), linear-gradient(0deg, rgba(0,0,0,.35), transparent 50%); }
+  :global([data-theme="dark"]) .provider-cta-stat { background: rgba(24,32,42,.92); color: var(--text-main); }
 
   .eyebrow { color: var(--accent-gold); font-size: .7rem; font-weight: 800; letter-spacing: .12em; }
   .footer-logo { width: 176px; height: auto; display: block; opacity: .96; }
@@ -1929,7 +2170,9 @@
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
   @media (max-width: 900px) {
-    .provider-cta { margin-top: 48px; flex-direction: column; align-items: flex-start; }
+    .provider-cta { margin-top: 48px; flex-direction: column; }
+    .provider-cta-content, .provider-cta-visual { width: 100%; }
+    .provider-cta-visual { min-height: 230px; }
     .footer-container { grid-template-columns: repeat(3, 1fr); }
     .footer-container .footer-col:first-child { grid-column: 1 / -1; }
     .footer-connect { grid-column: 1 / -1; max-width: 360px; }
@@ -1938,7 +2181,13 @@
   }
 
   @media (max-width: 520px) {
-    .provider-cta { padding: 32px 20px; }
+    .provider-cta-content { padding: 28px 20px; }
+    .provider-benefits { grid-template-columns: 1fr 1fr; gap: 14px 10px; }
+    .provider-benefits strong { font-size: .66rem; }
+    .provider-benefits small { font-size: .62rem; }
+    .provider-cta-actions { flex-direction: column; }
+    .provider-cta-actions button { width: 100%; }
+    .provider-cta-visual { min-height: 210px; }
     .provider-proof { white-space: normal; flex-wrap: wrap; }
     .footer-container { grid-template-columns: 1fr 1fr; gap: 28px 18px; }
     .footer-container .footer-col:first-child { grid-column: 1 / -1; }
@@ -1951,6 +2200,57 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+  }
+
+  @media (max-width: 600px) {
+    .main-content { padding: 12px 12px 32px; }
+    .hero-section { padding: 48px 14px 24px; margin: -12px -12px 22px; width: calc(100% + 24px); min-height: 620px; }
+    .hero-content-box { width: 100%; gap: 10px; }
+    .hero-pill-badge { max-width: 100%; font-size: .62rem; padding-inline: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hero-headline { font-size: clamp(1.65rem, 8vw, 2.2rem); line-height: 1.1; }
+    .hero-subtext { font-size: .86rem; line-height: 1.45; }
+    .category-experience-tabs { width: 100%; justify-content: flex-start; overflow-x: auto; border-radius: var(--radius-md); scrollbar-width: none; }
+    .category-experience-tabs::-webkit-scrollbar { display: none; }
+    .experience-tab { flex: 0 0 auto; font-size: .72rem; padding: 8px 10px; }
+    .search-module { flex-direction: column; align-items: stretch; gap: 11px; padding: 13px; border-radius: var(--radius-lg); }
+    .search-divider { width: 100%; height: 1px; }
+    .search-field { width: 100%; }
+    .search-btn { width: 100%; justify-content: center; padding: 11px 14px; font-size: .84rem; }
+    .location-chips-row { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 3px; scrollbar-width: none; }
+    .location-chips-row::-webkit-scrollbar { display: none; }
+    .chips-label, .location-chip { flex: 0 0 auto; }
+    .marketplace-browsing-section { display: block; margin-bottom: 28px; }
+    .filters-sidebar { display: none; }
+    .listings-main-area { width: 100%; gap: 14px; }
+    .sort-header-row { align-items: flex-start; flex-direction: column; gap: 10px; }
+    .browse-title { font-size: 1.12rem; line-height: 1.25; }
+    .results-count { font-size: .76rem; }
+    .sort-controls { width: 100%; justify-content: space-between; }
+    .sort-select { max-width: 190px; }
+    .listings-grid, .trending-grid, .deals-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .empty-state-box { padding: 30px 18px; }
+    .form-grid { grid-template-columns: minmax(0, 1fr); }
+    .passport-page-spread { grid-template-columns: minmax(0, 1fr); }
+    .book-spine { display: none; }
+    .page-left, .page-right { padding: 16px; }
+    .company-title-block { flex-direction: column; gap: 12px; }
+    .provider-dash-header, .company-listings-card, .provider-onboard-card, .provider-bookings-panel { padding: 18px; }
+    .provider-booking-layout { grid-template-columns: 1fr; }
+    .provider-booking-row { grid-template-columns: 1fr; gap: 9px; }
+    .booking-row-main > strong { white-space: normal; }
+    .booking-row-actions { justify-content: flex-start; }
+    .provider-cta { margin: 26px 0 0; padding: 28px 18px; }
+    .provider-cta h2 { font-size: 1.55rem; }
+    .provider-cta-action { width: 100%; }
+    .provider-cta-action .btn-gold { width: 100%; }
+    .footer { padding: 38px 18px 20px; }
+    .footer-container { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 16px; }
+    .footer-logo { width: 150px; }
+    .footer-desc { font-size: .8rem; }
+    .footer-col h4 { font-size: .78rem; margin-bottom: 11px; }
+    .footer-col ul { font-size: .74rem; gap: 7px; }
+    .footer-connect { grid-column: 1 / -1; max-width: none; }
+    .footer-bottom { font-size: .7rem; overflow-wrap: anywhere; }
   }
 
   .deals-hero-banner {

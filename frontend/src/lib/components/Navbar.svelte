@@ -820,4 +820,16 @@
       font-size: 0.8rem;
     }
   }
+
+  @media (max-width: 600px) {
+    .nav-container { gap: 6px; }
+    .brand-logo { width: 150px; max-height: 40px; }
+    .marketing-link { display: none; }
+    .nav-links { gap: 0; }
+    .nav-links .nav-item { padding-inline: 10px; }
+    .nav-links .nav-item:nth-child(4),
+    .nav-links .nav-item:nth-child(5) { display: none; }
+    .marketing-action { display: none; }
+    .profile-menu { position: fixed; top: 64px; right: 12px; left: 12px; width: auto; max-height: calc(100vh - 78px); overflow-y: auto; }
+  }
 </style>
