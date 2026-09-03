@@ -58,6 +58,7 @@
   let newImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
   let newDesc = '';
   let providerPublishedListings = [];
+  let providerSuccessMsg = '';
 
   // Context-aware Hero Atmosphere Configurations
   const categoryAtmospheres = {
