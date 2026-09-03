@@ -66,8 +66,7 @@
   <div class="nav-container">
     <!-- Brand Logo -->
     <div class="brand" role="button" tabindex="0" on:click={() => { activeTab = 'listings'; selectedCategory = 'ALL'; }} on:keydown={(e) => e.key === 'Enter' && (activeTab = 'listings')}>
-      <span class="brand-text">Easy<span class="brand-highlight">Service</span></span>
-      <span class="brand-tagline">PURELY SIMPLE</span>
+      <img class="brand-logo" src={currentTheme === 'dark' ? '/easyservice-logo-dark.svg' : '/easyservice-logo.svg'} alt="EasyService, purely simple" />
     </div>
 
     <!-- Editorial Main Navigation Links with Professional Icons -->
@@ -92,73 +91,18 @@
         <Icon name="bag" size={15} />
         Shop
       </button>
-      <button class="nav-item {activeTab === 'deals' ? 'active' : ''}" on:click={() => { activeTab = 'deals'; }}>
-        <Icon name="sparkles" size={15} color="var(--accent-terracotta)" />
-        🔥 Hot Deals
+      <button class="marketing-link deals-link {activeTab === 'deals' ? 'active' : ''}" on:click={() => activeTab = 'deals'}>
+        <img src="/hot-deals-badge.svg" alt="" class="hot-deals-badge" />
+        Hot Deals
       </button>
     </nav>
 
-    <!-- Right Side Actions -->
+    <!-- Focused Utility Actions -->
     <div class="user-actions">
-      <!-- Spin Wheel Promos -->
-      <button class="promo-wheel-btn" title="Spin Lucky Promo Wheel" on:click={openSpinModal}>
-        <Icon name="promo" size={16} color="var(--accent-gold)" />
-        <span class="btn-text">Spin Wheel</span>
+      <button class="marketing-action" title="Spin Lucky Promo Wheel" on:click={openSpinModal}>
+        <Icon name="promo" size={15} color="currentColor" />
+        <span>Spin the Wheel</span>
       </button>
-
-      <button class="promo-wheel-btn" title="Easy Tools: Split Bill" on:click={openToolsModal}>
-        <Icon name="sparkles" size={16} color="var(--accent-gold)" />
-        <span class="btn-text">Easy Tools</span>
-      </button>
-
-      <!-- Smart Notification Reminders System -->
-      <div class="notification-container">
-        <button class="notif-bell-btn" title="Booking Notifications" on:click={() => showNotificationsDrawer = !showNotificationsDrawer}>
-          <Icon name="bell" size={18} color="var(--text-main)" />
-          {#if unreadNotifCount > 0}
-            <span class="notif-badge">{unreadNotifCount}</span>
-          {/if}
-        </button>
-
-        {#if showNotificationsDrawer}
-          <div class="notif-drawer marketplace-card animate-fade-in">
-            <div class="drawer-header">
-              <h3><Icon name="bell" size={15} color="var(--accent-gold)" /> Booking Reminders</h3>
-              <span class="sub-text">{notifications.length} Notifications</span>
-            </div>
-
-            {#if notifications.length === 0}
-              <div class="notif-empty">No active notifications</div>
-            {:else}
-              <div class="notif-list">
-                {#each notifications as n}
-                  <div class="notif-item {n.unread ? 'unread' : ''}" on:click={() => { activeTab = 'history'; showNotificationsDrawer = false; }}>
-                    <span class="notif-title">{n.title}</span>
-                    <p class="notif-msg">{n.message}</p>
-                    <span class="notif-time">{n.time}</span>
-                  </div>
-                {/each}
-              </div>
-            {/if}
-          </div>
-        {/if}
-      </div>
-
-      <!-- My Bookings Link -->
-      <button class="nav-item {activeTab === 'history' ? 'active' : ''}" on:click={() => activeTab = 'history'}>
-        <Icon name="book" size={16} color="var(--accent-gold)" />
-        <span>Passport Profile</span>
-        {#if bookingCount > 0}
-          <span class="count-badge">{bookingCount}</span>
-        {/if}
-      </button>
-
-      <!-- Become a Provider -->
-      <button class="nav-item {activeTab === 'provider' ? 'active' : ''}" on:click={() => activeTab = 'provider'}>
-        Become Provider
-      </button>
-
-      <!-- Theme Switcher Toggle (Light / Dark) -->
       <button class="theme-toggle-btn" on:click={toggleTheme} title="Toggle Light/Dark Theme">
         <Icon name={currentTheme === 'light' ? 'moon' : 'sun'} size={18} color="var(--text-main)" />
       </button>
@@ -176,15 +120,31 @@
 
           {#if showProfileDropdown}
             <div class="profile-menu marketplace-card animate-fade-in">
-              <div class="menu-header">
-                <span class="user-display-name">{$currentUser.name}</span>
-                <span class="badge-verified">✓ {$currentUser.identityStatus}</span>
+              <div class="profile-intro">
+                <span class="user-avatar profile-avatar"><Icon name="user" size={17} /></span>
+                <div class="profile-copy">
+                  <span class="user-display-name">{$currentUser.name}</span>
+                  <span class="profile-type">{$currentUser.customerType || 'Customer'}</span>
+                </div>
               </div>
               <span class="menu-email">{$currentUser.email}</span>
+              <span class="badge-verified">✓ {$currentUser.identityStatus || 'Verified account'}</span>
+
+              <div class="menu-divider"></div>
+              <div class="account-links">
+                <button class="menu-item" on:click={() => { activeTab = 'listings'; showProfileDropdown = false; }}><Icon name="user" size={15} /> My Profile</button>
+                <button class="menu-item" on:click={() => { activeTab = 'history'; showProfileDropdown = false; }}><Icon name="book" size={15} /> My Bookings {#if bookingCount > 0}<span class="count-badge">{bookingCount}</span>{/if}</button>
+                <button class="menu-item" on:click={() => { activeTab = 'history'; showProfileDropdown = false; }}><Icon name="book" size={15} /> Passport Profile</button>
+                <button class="menu-item" on:click={() => { showProfileDropdown = false; }}><Icon name="bag" size={15} /> Easy Wallet</button>
+                <button class="menu-item" on:click={() => { showNotificationsDrawer = true; showProfileDropdown = false; }}><Icon name="bell" size={15} /> Notifications {#if unreadNotifCount > 0}<span class="count-badge">{unreadNotifCount}</span>{/if}</button>
+                <button class="menu-item" on:click={() => { openToolsModal(); showProfileDropdown = false; }}><Icon name="sparkles" size={15} /> Easy Tools</button>
+                <button class="menu-item" on:click={() => { activeTab = 'provider'; showProfileDropdown = false; }}><Icon name="building" size={15} /> Provider Hub</button>
+              </div>
 
               <!-- Custom Balance Top Up -->
               <div class="deposit-section">
-                <label for="depositAmountInput" class="deposit-label">Easy Wallet Top Up</label>
+                <label for="depositAmountInput" class="deposit-label">Easy Wallet</label>
+                <span class="wallet-menu-balance">Available balance: ETB {$currentUser.balance ? $currentUser.balance.toLocaleString() : '0'}</span>
                 <div class="deposit-input-row">
                   <input id="depositAmountInput" type="number" bind:value={customDepositAmount} class="input-field deposit-input" min="100" />
                   <button class="btn-gold deposit-add-btn" on:click={handleAddCustomBalance}>+ Add</button>
@@ -202,9 +162,30 @@
               {/each}
 
               <div class="menu-divider"></div>
+              <button class="menu-item" on:click={toggleTheme}><Icon name={currentTheme === 'light' ? 'moon' : 'sun'} size={15} /> {currentTheme === 'light' ? 'Dark Mode' : 'Light Mode'}</button>
               <button class="menu-item logout-item" on:click={logout}>
-                Log Out
+                <Icon name="user" size={15} /> Log Out
               </button>
+            </div>
+          {/if}
+
+          {#if showNotificationsDrawer}
+            <div class="notif-drawer marketplace-card animate-fade-in">
+              <div class="drawer-header">
+                <h3><Icon name="bell" size={15} color="var(--accent-gold)" /> Booking Reminders</h3>
+                <button class="drawer-close" on:click={() => showNotificationsDrawer = false} aria-label="Close notifications">×</button>
+              </div>
+              {#if notifications.length === 0}
+                <div class="notif-empty">No active notifications</div>
+              {:else}
+                <div class="notif-list">
+                  {#each notifications as n}
+                    <button class="notif-item {n.unread ? 'unread' : ''}" on:click={() => { activeTab = 'history'; showNotificationsDrawer = false; }}>
+                      <span class="notif-title">{n.title}</span><span class="notif-msg">{n.message}</span><span class="notif-time">{n.time}</span>
+                    </button>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/if}
         </div>
@@ -222,22 +203,34 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    padding: 12px 32px;
+    padding: 10px clamp(16px, 3vw, 40px);
     transition: background-color 0.25s ease, border-color 0.25s ease;
   }
 
   .nav-container {
-    width: 100%;
+    width: min(100%, 1560px);
     margin: 0 auto;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: clamp(16px, 2.5vw, 40px);
   }
 
   .brand {
     display: flex;
     flex-direction: column;
     cursor: pointer;
+    flex: 0 0 auto;
+    min-width: 218px;
+    padding: 2px 0;
+  }
+
+  .brand-logo {
+    display: block;
+    width: 218px;
+    height: auto;
+    max-height: 54px;
+    object-fit: contain;
+    object-position: left center;
   }
 
   .brand-text {
@@ -262,7 +255,11 @@
 
   .nav-links {
     display: flex;
-    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .nav-item {
@@ -270,8 +267,9 @@
     border: none;
     color: var(--text-muted);
     font-weight: 700;
-    font-size: 0.88rem;
-    padding: 8px 14px;
+    font-size: 0.84rem;
+    white-space: nowrap;
+    padding: 9px 11px;
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -283,6 +281,21 @@
   .nav-item:hover, .nav-item.active {
     color: var(--text-main);
     background: var(--bg-surface-secondary);
+  }
+
+  .marketing-link {
+    margin-left: 6px;
+    color: var(--accent-terracotta);
+    font-weight: 800;
+    padding-left: 5px;
+  }
+
+  .hot-deals-badge { width: 25px; height: 25px; object-fit: contain; }
+
+  .marketing-link:hover,
+  .marketing-link.active {
+    color: var(--accent-terracotta-hover);
+    background: color-mix(in srgb, var(--accent-terracotta) 10%, transparent);
   }
 
   .count-badge {
@@ -297,7 +310,32 @@
   .user-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: flex-end;
+    gap: 7px;
+    flex: 0 0 auto;
+  }
+
+  .marketing-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 0 13px;
+    border: 1px solid var(--accent-gold);
+    border-radius: var(--radius-md);
+    background: var(--accent-gold-light);
+    color: var(--accent-gold-hover);
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .marketing-action:hover {
+    background: var(--accent-gold);
+    color: #fff;
+    transform: translateY(-1px);
   }
 
   .notification-container {
@@ -419,7 +457,8 @@
     color: var(--accent-gold);
     font-weight: 700;
     font-size: 0.82rem;
-    padding: 7px 12px;
+    min-height: 40px;
+    padding: 7px 11px;
     border-radius: var(--radius-md);
     cursor: pointer;
     display: flex;
@@ -436,7 +475,9 @@
   .theme-toggle-btn {
     background: var(--bg-surface-secondary);
     border: 1px solid var(--border-subtle);
-    padding: 8px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
     border-radius: var(--radius-md);
     cursor: pointer;
     display: flex;
@@ -456,7 +497,8 @@
   .user-pill {
     background: var(--bg-surface-secondary);
     border: 1px solid var(--border-subtle);
-    padding: 4px 6px 4px 12px;
+    min-height: 42px;
+    padding: 4px 6px 4px 11px;
     border-radius: 9999px;
     display: flex;
     align-items: center;
@@ -509,6 +551,48 @@
     flex-direction: column;
     gap: 8px;
     z-index: 200;
+  }
+
+  .profile-intro {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .profile-avatar {
+    flex: 0 0 auto;
+  }
+
+  .profile-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .profile-type {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+
+  .account-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+  }
+
+  .account-links .menu-item {
+    min-width: 0;
+    font-size: 0.78rem;
+    padding: 8px 6px;
+  }
+
+  .wallet-menu-balance {
+    color: var(--status-success-text);
+    font-size: 0.76rem;
+    font-weight: 800;
   }
 
   .menu-header {
@@ -597,5 +681,143 @@
 
   .logout-item {
     color: #ef4444;
+  }
+
+  @media (max-width: 1320px) {
+    .nav-container {
+      gap: 14px;
+    }
+
+    .brand {
+      min-width: 150px;
+    }
+
+    .nav-item {
+      padding-inline: 8px;
+    }
+
+    .user-actions {
+      gap: 5px;
+    }
+
+    .promo-wheel-btn {
+      padding-inline: 8px;
+    }
+
+    .marketing-action {
+      padding-inline: 9px;
+    }
+  }
+
+  @media (max-width: 1120px) {
+    .nav-links .nav-item:nth-child(4),
+    .user-actions > .nav-item:last-of-type {
+      display: none;
+    }
+
+    .marketing-action span {
+      display: none;
+    }
+
+    .marketing-action {
+      width: 40px;
+      justify-content: center;
+      padding-inline: 0;
+    }
+  }
+
+  @media (max-width: 820px) {
+    .navbar {
+      padding-block: 8px;
+    }
+
+    .nav-container {
+      flex-wrap: wrap;
+      gap: 8px 14px;
+    }
+
+    .brand {
+      min-width: 0;
+      margin-right: auto;
+    }
+
+    .brand-text {
+      font-size: 1.25rem;
+    }
+
+    .brand-logo {
+      width: 176px;
+      max-height: 46px;
+    }
+
+    .nav-links {
+      order: 3;
+      flex-basis: 100%;
+      justify-content: flex-start;
+      overflow-x: auto;
+      scrollbar-width: none;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 7px;
+    }
+
+    .nav-links::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-links .nav-item:nth-child(4),
+    .user-actions > .nav-item:last-of-type {
+      display: flex;
+    }
+
+    .marketing-link {
+      margin-left: 0;
+    }
+
+    .hot-deals-badge { width: 23px; height: 23px; }
+
+    .user-actions .nav-item span:not(.count-badge) {
+      display: none;
+    }
+
+    .user-actions .nav-item {
+      width: 40px;
+      height: 40px;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .wallet-badge-box {
+      display: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .navbar {
+      padding-inline: 12px;
+    }
+
+    .user-actions {
+      gap: 3px;
+    }
+
+    .user-pill,
+    .theme-toggle-btn,
+    .marketing-action,
+    .user-actions .nav-item,
+    .notif-bell-btn {
+      width: 36px;
+      min-height: 36px;
+      height: 36px;
+    }
+
+    .user-avatar {
+      width: 27px;
+      height: 27px;
+    }
+
+    .nav-links .nav-item {
+      padding-inline: 9px;
+      font-size: 0.8rem;
+    }
   }
 </style>

@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { Facebook, Instagram, Twitter, Youtube } from 'lucide-svelte';
   import Navbar from './lib/components/Navbar.svelte';
   import ListingCard from './lib/components/ListingCard.svelte';
   import BookingModal from './lib/components/BookingModal.svelte';
@@ -927,36 +928,86 @@
     </div>
   {/if}
 
-  <!-- Footer -->
+  <!-- Provider CTA and footer -->
+  <section class="provider-cta">
+    <div class="provider-cta-copy">
+      <span class="eyebrow">GROW WITH EASYSERVICE</span>
+      <h2>Your service belongs here.</h2>
+      <p>Whether you run a hotel, rental fleet, event, experience, or shop, reach customers looking for trusted services across Ethiopia.</p>
+    </div>
+    <div class="provider-cta-action">
+      <button class="btn-gold" on:click={() => activeTab = 'provider'}>Become a Provider <span aria-hidden="true">→</span></button>
+      <span class="provider-proof"><Icon name="check" size={14} /> Verified marketplace <Icon name="check" size={14} /> Easy management</span>
+    </div>
+  </section>
+
   <footer class="footer">
     <div class="footer-container">
       <div class="footer-col">
-        <span class="brand">Easy<span class="brand-highlight">Service</span></span>
-        <p class="footer-desc">Ethiopia's premier verified service marketplace connecting customers with quality hotels, car rentals, events, and shop products.</p>
+        <img class="footer-logo" src={currentTheme === 'dark' ? '/easyservice-logo-dark.svg' : '/easyservice-logo.svg'} alt="EasyService, purely simple" />
+        <p class="footer-desc">Ethiopia's trusted marketplace for stays, transportation, experiences, events, and authentic products.</p>
+        <div class="footer-socials" aria-label="Social links">
+          <a href="#footer" aria-label="Facebook"><Facebook size={15} strokeWidth={2} /></a><a href="#footer" aria-label="Instagram"><Instagram size={15} strokeWidth={2} /></a><a href="#footer" aria-label="Twitter"><Twitter size={15} strokeWidth={2} /></a><a href="#footer" aria-label="YouTube"><Youtube size={15} strokeWidth={2} /></a>
+        </div>
       </div>
 
       <div class="footer-col">
-        <h4>Ecosystem</h4>
+        <h4>Discover</h4>
         <ul>
-          <li>7 Stays & Hotels</li>
-          <li>7 Car Rentals</li>
-          <li>7 Events & Passes</li>
-          <li>7 Store Crafts</li>
+          <li><a href="#explore">Explore</a></li><li><a href="#stays">Stays</a></li><li><a href="#drive">Drive</a></li><li><a href="#experiences">Experiences</a></li><li><a href="#shop">Shop</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>For Customers</h4>
+        <ul>
+          <li><a href="#bookings">My Bookings</a></li><li><a href="#profile">Passport Profile</a></li><li><a href="#wallet">Easy Wallet</a></li><li><a href="#support">Help & Support</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>For Providers</h4>
+        <ul>
+          <li><a href="#provider" on:click|preventDefault={() => activeTab = 'provider'}>Become a Provider</a></li><li><a href="#provider">Provider Hub</a></li><li><a href="#provider">List a Service</a></li><li><a href="#support">Provider Support</a></li>
         </ul>
       </div>
 
       <div class="footer-col">
         <h4>Destinations</h4>
         <ul>
-          <li>Addis Ababa</li>
-          <li>Bishoftu Lakefront</li>
-          <li>Lake Hawassa Waterfront</li>
-          <li>Lalibela Highlands</li>
+          <li><a href="#addis">Addis Ababa</a></li><li><a href="#bishoftu">Bishoftu</a></li><li><a href="#hawassa">Hawassa</a></li><li><a href="#lalibela">Lalibela</a></li><li><a href="#bahirdar">Bahir Dar</a></li>
         </ul>
       </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#about">About EasyService</a></li><li><a href="#how-it-works">How It Works</a></li><li><a href="#trust">Trust & Safety</a></li><li><a href="#terms">Terms</a></li><li><a href="#privacy">Privacy</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-connect">
+        <h4>Stay Connected</h4>
+        <p>Get the best deals and local discoveries.</p>
+        <form class="subscribe-form" on:submit|preventDefault>
+          <label class="sr-only" for="footerEmail">Email address</label>
+          <input id="footerEmail" type="email" placeholder="Enter your email" required />
+          <button type="submit" aria-label="Subscribe">→</button>
+        </form>
+        <span class="app-label">Download our app</span>
+        <div class="app-buttons"><a href="#google-play">Google Play</a><a href="#app-store">App Store</a></div>
+      </div>
     </div>
+
+    <div class="footer-trust">
+      <div><Icon name="shield" size={21} /><span><strong>Verified & Secure</strong><small>All providers are verified for your safety and trust</small></span></div>
+      <div><Icon name="calendar" size={21} /><span><strong>Secure Payments</strong><small>Simulated payments with bank-level security</small></span></div>
+      <div><Icon name="bell" size={21} /><span><strong>24/7 Support</strong><small>We're here anytime you need help</small></span></div>
+      <div><Icon name="heart" size={21} /><span><strong>Made in Ethiopia</strong><small>Proudly built for Ethiopia with love</small></span></div>
+    </div>
+
     <div class="footer-bottom">
-      © 2026 EasyService Marketplace Inc. All rights reserved.
+      <span>© 2026 EasyService Marketplace Inc. All rights reserved.</span><span><a href="#about">About Us</a> · <a href="#how-it-works">How It Works</a> · <a href="#trust">Trust & Safety</a> · <a href="#terms">Terms of Service</a> · <a href="#privacy">Privacy Policy</a></span><span>◎ English&nbsp;&nbsp;·&nbsp;&nbsp;ETB</span>
     </div>
   </footer>
 
@@ -1769,10 +1820,11 @@
   }
 
   .footer {
-    background: var(--bg-surface);
+    background: #fffdfa;
+    color: var(--text-main);
     border-top: 1px solid var(--border-subtle);
-    padding: 48px 32px 24px;
-    margin-top: 40px;
+    padding: 56px clamp(20px, 5vw, 72px) 24px;
+    margin-top: 0;
     width: 100%;
   }
 
@@ -1780,9 +1832,33 @@
     width: 100%;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 40px;
+    max-width: 1440px;
+    grid-template-columns: 1.75fr repeat(4, 1fr) 1.55fr;
+    gap: 32px;
   }
+
+  :global([data-theme="dark"]) .footer { background: #0d1824; color: #f7f4ee; }
+
+  .provider-cta {
+    max-width: 1440px;
+    margin: 72px auto 0;
+    padding: 42px clamp(24px, 5vw, 68px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    background: var(--bg-surface-secondary);
+    border-top: 3px solid var(--accent-gold);
+  }
+
+  .provider-cta h2 { font-size: clamp(1.6rem, 3vw, 2.35rem); margin: 6px 0 8px; }
+  .provider-cta p { max-width: 650px; color: var(--text-muted); }
+  .provider-cta-action { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; flex: 0 0 auto; }
+  .provider-proof { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: .74rem; white-space: nowrap; }
+  .provider-proof :global(svg) { color: var(--status-success-text); }
+
+  .eyebrow { color: var(--accent-gold); font-size: .7rem; font-weight: 800; letter-spacing: .12em; }
+  .footer-logo { width: 176px; height: auto; display: block; opacity: .96; }
 
   .footer-desc {
     font-size: 0.88rem;
@@ -1791,10 +1867,15 @@
     max-width: 380px;
   }
 
+  .footer-socials { display: flex; gap: 8px; margin-top: 20px; }
+  .footer-socials a { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--border-subtle); color: var(--text-main); font-size: .66rem; font-weight: 800; text-decoration: none; }
+  .footer-socials a:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+
   .footer-col h4 {
     font-size: 0.95rem;
     font-weight: 800;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    color: var(--text-main);
   }
 
   .footer-col ul {
@@ -1806,6 +1887,27 @@
     color: var(--text-muted);
   }
 
+  .footer-col li a { color: inherit; text-decoration: none; transition: color .2s ease; }
+  .footer-col li a:hover { color: var(--accent-gold); }
+
+  .footer-connect h4 { color: var(--text-main); font-size: .95rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 12px; }
+  .footer-connect p { color: var(--text-muted); font-size: .78rem; margin-bottom: 12px; }
+  .subscribe-form { display: flex; border: 1px solid var(--border-subtle); background: var(--bg-surface); overflow: hidden; }
+  .subscribe-form input { min-width: 0; width: 100%; border: 0; outline: 0; padding: 10px 11px; background: transparent; color: var(--text-main); font: inherit; font-size: .74rem; }
+  .subscribe-form button { width: 40px; border: 0; background: var(--accent-gold); color: #fff; font-size: 1.1rem; cursor: pointer; }
+  .app-label { display: block; margin: 18px 0 8px; color: var(--text-main); font-size: .7rem; font-weight: 800; text-transform: uppercase; }
+  .app-buttons { display: flex; gap: 6px; }
+  .app-buttons a { border: 1px solid var(--border-subtle); color: var(--text-main); padding: 8px 9px; font-size: .68rem; text-decoration: none; }
+  .app-buttons a:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+
+  .footer-trust { max-width: 1440px; margin: 36px auto 0; padding: 22px 0 0; border-top: 1px solid var(--border-subtle); display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .footer-trust > div { display: flex; align-items: flex-start; gap: 10px; padding-right: 18px; border-right: 1px solid var(--border-subtle); }
+  .footer-trust > div:last-child { border-right: 0; }
+  .footer-trust :global(svg) { flex: 0 0 auto; color: var(--accent-gold); }
+  .footer-trust span { display: flex; flex-direction: column; gap: 3px; }
+  .footer-trust strong { font-size: .72rem; }
+  .footer-trust small { color: var(--text-muted); font-size: .68rem; line-height: 1.35; }
+
   .footer-bottom {
     width: 100%;
     margin: 32px auto 0;
@@ -1814,6 +1916,36 @@
     text-align: center;
     font-size: 0.8rem;
     color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .footer-bottom span:nth-child(2) { text-align: center; }
+  .footer-bottom a { color: inherit; text-decoration: none; }
+  .footer-bottom a:hover { color: var(--accent-gold); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  @media (max-width: 900px) {
+    .provider-cta { margin-top: 48px; flex-direction: column; align-items: flex-start; }
+    .footer-container { grid-template-columns: repeat(3, 1fr); }
+    .footer-container .footer-col:first-child { grid-column: 1 / -1; }
+    .footer-connect { grid-column: 1 / -1; max-width: 360px; }
+    .footer-trust { grid-template-columns: repeat(2, 1fr); }
+    .footer-trust > div:nth-child(2) { border-right: 0; }
+  }
+
+  @media (max-width: 520px) {
+    .provider-cta { padding: 32px 20px; }
+    .provider-proof { white-space: normal; flex-wrap: wrap; }
+    .footer-container { grid-template-columns: 1fr 1fr; gap: 28px 18px; }
+    .footer-container .footer-col:first-child { grid-column: 1 / -1; }
+    .footer-bottom { flex-direction: column; gap: 6px; text-align: left; }
+    .footer-trust { grid-template-columns: 1fr; gap: 16px; }
+    .footer-trust > div { border-right: 0; }
+    .footer-bottom span:nth-child(2) { text-align: left; }
   }
   .hot-deals-section {
     display: flex;
