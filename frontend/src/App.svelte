@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { afterUpdate, onMount } from 'svelte';
   import { Facebook, Instagram, Twitter, Youtube } from 'lucide-svelte';
   import Navbar from './lib/components/Navbar.svelte';
   import ListingCard from './lib/components/ListingCard.svelte';
@@ -16,6 +16,7 @@
   import { userBookings, cancelBookingItem, updateBookingProviderStatus } from './lib/stores/bookingStore.js';
 
   let activeTab = 'listings'; // 'listings' | 'history' | 'provider'
+  let previousActiveTab = activeTab;
   let profileSubTab = 'BOOKINGS'; // 'BOOKINGS' | 'FAVORITES'
   let selectedCategory = 'ALL';
   let selectedLocation = 'ALL';
@@ -60,6 +61,13 @@
   let newDesc = '';
   let providerPublishedListings = [];
   let providerSuccessMsg = '';
+
+  afterUpdate(() => {
+    if (activeTab !== previousActiveTab) {
+      previousActiveTab = activeTab;
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  });
 
   function loadProviderListings() {
     try {
@@ -780,6 +788,53 @@
         {/if}
       </section>
 
+    {:else if activeTab === 'provider-how'}
+      <section class="provider-guide animate-fade-in">
+        <div class="provider-guide-hero">
+          <div>
+            <span class="eyebrow"><Icon name="sparkles" size={13} /> EASYSERVICE PROVIDER GUIDE</span>
+            <h1>Grow your business with EasyService.</h1>
+            <p>List your hotel, vehicle, event, experience, or products and connect with customers looking for trusted services across Ethiopia.</p>
+            <button class="btn-gold" on:click={() => activeTab = 'provider'}>Become a Provider <span aria-hidden="true">→</span></button>
+            <span class="guide-proof">First month FREE · Verified marketplace · Simple management</span>
+          </div>
+          <div class="guide-hero-mark"><span>01</span><strong>Start simple.</strong><small>Grow with confidence.</small></div>
+        </div>
+
+        <div class="guide-section guide-workflow">
+          <div class="guide-section-heading"><span class="eyebrow">HOW EASYSERVICE WORKS</span><h2>Getting started is simple.</h2></div>
+          <div class="workflow-grid">
+            <article><span>01</span><h3>Create your provider profile</h3><p>Tell us about yourself and your business.</p><small>Full name · Business name · Phone · Email · Category · Location</small></article>
+            <article><span>02</span><h3>Get verified</h3><p>Complete the required checks so customers know who they are booking with.</p><small>Identity · Business · Contact · Listing information</small><b>✓ Verified Provider</b></article>
+            <article><span>03</span><h3>Create your listing</h3><p>Add photos, title, description, location, price, availability, capacity, and rules.</p><small>Stays · Drive · Experiences · Shop</small></article>
+            <article><span>04</span><h3>Customers discover you</h3><p>Your listings appear throughout the marketplace.</p><strong>Search → Discover → Compare → Book</strong></article>
+            <article><span>05</span><h3>Manage your business</h3><p>Use Provider Hub to manage listings, bookings, availability, customers, and transactions.</p></article>
+          </div>
+        </div>
+
+        <div class="guide-free-month">
+          <div><span class="eyebrow">YOUR FIRST MONTH IS FREE</span><h2>Start with EasyService at no cost.</h2><p>Your first 30 days are completely free while you create listings and connect with customers.</p></div>
+          <div class="free-checks"><span>✓ Create your profile</span><span>✓ Complete verification</span><span>✓ Receive bookings</span><span>✓ Use Provider Hub</span></div>
+          <button class="btn-gold" on:click={() => activeTab = 'provider'}>Start Your Free Month →</button>
+        </div>
+
+        <div class="guide-section">
+          <div class="guide-section-heading"><span class="eyebrow">WHAT CAN YOU OFFER?</span><h2>Choose the service that fits your business.</h2></div>
+          <div class="offer-grid"><article><span>🏨</span><h3>Hotels & Stays</h3><p>Showcase your hotel, resort, villa, or accommodation.</p></article><article><span>🚗</span><h3>Car Rentals</h3><p>Offer vehicles for customers traveling around Ethiopia.</p></article><article><span>🎟</span><h3>Events & Experiences</h3><p>Promote festivals, activities, and unique experiences.</p></article><article><span>🛍</span><h3>Store Products</h3><p>Sell authentic Ethiopian products and artisan goods.</p></article></div>
+        </div>
+
+        <div class="guide-two-column">
+          <article class="guide-info-panel"><span class="eyebrow">PROVIDER GUIDELINES</span><h2>Keep your business information accurate.</h2><p>Customers rely on what you display. Keep prices, availability, photos, descriptions, location, and contact details current.</p><ul><li>Be honest about what you offer.</li><li>Honor confirmed bookings.</li><li>Communicate respectfully.</li><li>Respond to customer requests promptly.</li></ul></article>
+          <article class="guide-info-panel"><span class="eyebrow">VERIFICATION & TRUST</span><h2>Built around trusted providers.</h2><p>Verified providers help customers make more confident decisions. The badge means you completed EasyService's required verification process.</p><div class="verified-callout">✓ Verified Provider</div><small>Verification does not guarantee every aspect of a provider's service.</small></article>
+        </div>
+
+        <div class="guide-hub-panel"><div><span class="eyebrow">YOUR PROVIDER HUB</span><h2>Everything you need in one place.</h2><p>See activity at a glance and manage every part of your marketplace business.</p></div><div class="hub-items"><span>Overview</span><span>Listings</span><span>Bookings</span><span>Availability</span><span>Transactions</span><span>Profile</span></div></div>
+
+        <div class="guide-faq guide-section"><div class="guide-section-heading"><span class="eyebrow">FREQUENTLY ASKED QUESTIONS</span><h2>Good questions. Clear answers.</h2></div><div class="faq-grid"><details><summary>Who can become an EasyService provider?</summary><p>Hotels, rental businesses, event organizers, experience providers, shops, and other eligible service businesses can apply.</p></details><details><summary>Does it cost anything to join?</summary><p>Your first month is free, with no setup fee or listing fee.</p></details><details><summary>Can I create multiple listings?</summary><p>Yes, providers can create multiple listings where supported.</p></details><details><summary>Do I need to be verified?</summary><p>Yes. Provider verification is part of the marketplace trust system.</p></details><details><summary>Can I update availability?</summary><p>Yes. Keep availability accurate through Provider Hub to prevent booking conflicts.</p></details><details><summary>Can I stop being a provider?</summary><p>Yes. Provider accounts can be managed according to platform policies.</p></details></div></div>
+
+        <div class="guide-final-cta"><span class="eyebrow">READY TO JOIN EASYSERVICE?</span><h2>Your business belongs here.</h2><p>Whether you run a hotel in Bishoftu, a rental fleet in Addis Ababa, an experience in Lalibela, or an artisan shop, EasyService gives your business a place to be discovered.</p><button class="btn-gold" on:click={() => activeTab = 'provider'}>Become a Provider →</button><strong>First month FREE</strong></div>
+      </section>
+
     {:else if activeTab === 'provider'}
       <!-- Provider Onboarding & Management Workspace -->
       <section class="provider-workspace animate-fade-in">
@@ -1012,7 +1067,7 @@
 
       <div class="provider-cta-actions">
         <button class="btn-gold" on:click={() => activeTab = 'provider'}><Icon name="user" size={16} /> Become a Provider <span aria-hidden="true">→</span></button>
-        <button class="btn-outline provider-how-btn" on:click={() => activeTab = 'provider'}><Icon name="sparkles" size={15} /> How It Works</button>
+        <button class="btn-outline provider-how-btn" on:click={() => activeTab = 'provider-how'}><Icon name="sparkles" size={15} /> How It Works</button>
       </div>
       <span class="provider-proof"><Icon name="shield" size={14} /> It's free to join and easy to get started.</span>
     </div>
@@ -1937,6 +1992,49 @@
     padding: 28px;
   }
 
+  .provider-guide { max-width: 1280px; margin: 0 auto; }
+  .provider-guide-hero { display: grid; grid-template-columns: minmax(0, 1.5fr) 280px; gap: 30px; align-items: center; min-height: 320px; padding: 48px clamp(24px, 5vw, 68px); background: linear-gradient(110deg, var(--bg-surface) 0%, var(--bg-surface-secondary) 100%); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+  .provider-guide-hero h1 { max-width: 660px; margin: 10px 0 12px; font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1.08; }
+  .provider-guide-hero p { max-width: 650px; color: var(--text-muted); font-size: 1rem; }
+  .guide-proof { display: block; margin-top: 14px; color: var(--text-muted); font-size: .75rem; font-weight: 700; }
+  .guide-hero-mark { width: 220px; height: 220px; margin-left: auto; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; border: 1px solid var(--accent-gold); background: var(--accent-gold-light); color: var(--text-main); transform: rotate(3deg); }
+  .guide-hero-mark span { color: var(--accent-gold); font-size: 4rem; font-weight: 900; line-height: 1; }
+  .guide-hero-mark strong { font-size: 1.2rem; margin-top: 12px; }
+  .guide-hero-mark small { color: var(--text-muted); }
+  .guide-section { padding: 70px 0 0; }
+  .guide-section-heading { margin-bottom: 24px; }
+  .guide-section-heading h2, .guide-free-month h2, .guide-info-panel h2, .guide-hub-panel h2 { margin-top: 7px; font-size: clamp(1.45rem, 3vw, 2.2rem); line-height: 1.15; }
+  .workflow-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+  .workflow-grid article, .offer-grid article, .guide-info-panel, .guide-hub-panel, .guide-final-cta { padding: 20px; border: 1px solid var(--border-subtle); background: var(--bg-surface); border-radius: var(--radius-md); }
+  .workflow-grid article { min-height: 210px; }
+  .workflow-grid article > span { color: var(--accent-gold); font-size: 1.45rem; font-weight: 900; }
+  .workflow-grid h3 { margin: 18px 0 7px; font-size: .95rem; }
+  .workflow-grid p, .workflow-grid small { color: var(--text-muted); font-size: .76rem; line-height: 1.45; }
+  .workflow-grid b { display: block; margin-top: 12px; color: var(--status-success-text); font-size: .75rem; }
+  .workflow-grid strong { display: block; margin-top: 14px; color: var(--accent-gold); font-size: .74rem; }
+  .guide-free-month { display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 28px; align-items: center; margin-top: 70px; padding: 34px; background: var(--text-main); color: var(--text-inverse); border-radius: var(--radius-lg); }
+  .guide-free-month p { max-width: 500px; margin-top: 8px; color: var(--text-muted); }
+  .free-checks { display: grid; gap: 8px; color: var(--text-inverse); font-size: .78rem; }
+  .free-checks span::first-letter { color: var(--accent-gold); }
+  .offer-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .offer-grid article > span { font-size: 1.7rem; }
+  .offer-grid h3 { margin: 12px 0 6px; font-size: 1rem; }
+  .offer-grid p, .guide-info-panel p, .guide-hub-panel p { color: var(--text-muted); font-size: .82rem; line-height: 1.5; }
+  .guide-two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding-top: 70px; }
+  .guide-info-panel ul { display: grid; gap: 8px; margin-top: 18px; padding-left: 18px; color: var(--text-muted); font-size: .82rem; }
+  .verified-callout { display: inline-flex; margin: 18px 0 10px; padding: 8px 12px; background: var(--status-success-bg); color: var(--status-success-text); font-size: .8rem; font-weight: 800; }
+  .guide-info-panel > small { color: var(--text-muted); font-size: .7rem; }
+  .guide-hub-panel { display: grid; grid-template-columns: 1fr 1.4fr; align-items: center; gap: 30px; margin-top: 70px; padding: 32px; background: var(--bg-surface-secondary); }
+  .hub-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .hub-items span { padding: 13px; border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-main); font-size: .78rem; font-weight: 800; }
+  .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .faq-grid details { border-bottom: 1px solid var(--border-subtle); padding: 14px 4px; }
+  .faq-grid summary { cursor: pointer; font-size: .84rem; font-weight: 800; }
+  .faq-grid p { padding: 10px 20px 0 0; color: var(--text-muted); font-size: .78rem; line-height: 1.5; }
+  .guide-final-cta { margin: 70px 0; padding: 42px; text-align: center; background: var(--accent-gold-light); border-color: var(--accent-gold); }
+  .guide-final-cta p { max-width: 720px; margin: 10px auto 20px; color: var(--text-muted); font-size: .9rem; }
+  .guide-final-cta strong { display: block; margin-top: 12px; color: var(--status-success-text); font-size: .75rem; }
+
   .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -2178,6 +2276,13 @@
     .footer-connect { grid-column: 1 / -1; max-width: 360px; }
     .footer-trust { grid-template-columns: repeat(2, 1fr); }
     .footer-trust > div:nth-child(2) { border-right: 0; }
+    .provider-guide-hero { grid-template-columns: 1fr; }
+    .guide-hero-mark { display: none; }
+    .workflow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .guide-free-month { grid-template-columns: 1fr 1fr; }
+    .guide-free-month .btn-gold { grid-column: 1 / -1; justify-self: start; }
+    .offer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .guide-hub-panel { grid-template-columns: 1fr; }
   }
 
   @media (max-width: 520px) {
@@ -2195,6 +2300,13 @@
     .footer-trust { grid-template-columns: 1fr; gap: 16px; }
     .footer-trust > div { border-right: 0; }
     .footer-bottom span:nth-child(2) { text-align: left; }
+    .provider-guide-hero { padding: 30px 20px; }
+    .provider-guide-hero h1 { font-size: 2rem; }
+    .guide-section, .guide-two-column { padding-top: 46px; }
+    .workflow-grid, .offer-grid, .guide-two-column, .faq-grid, .guide-free-month { grid-template-columns: 1fr; }
+    .guide-free-month { margin-top: 46px; padding: 24px 20px; }
+    .guide-free-month .btn-gold { grid-column: auto; }
+    .guide-final-cta { margin: 46px 0; padding: 30px 20px; }
   }
   .hot-deals-section {
     display: flex;
